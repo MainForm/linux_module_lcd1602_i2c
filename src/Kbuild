@@ -1,0 +1,2 @@
+obj-m += lcd1602.o
+lcd1602-y := lcd1602_main.o lcd1602_fops.o

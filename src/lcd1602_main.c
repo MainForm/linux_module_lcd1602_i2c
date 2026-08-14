@@ -4,6 +4,8 @@
 #include <linux/init.h>
 #include <linux/device.h>
 
+#include "lcd1602.h"
+
 #define LCD1602_CHAR_DEV_NAME   "lcd1602"
 #define LCD1602_CLASS_NAME      "char-lcd"
 
@@ -14,16 +16,12 @@ static int major;
 struct class *lcd1602_class;
 struct device *lcd1602_device; 
 
-static const struct file_operations fops = {
-    .owner = THIS_MODULE,
-};
-
 static int __init init_device(void){
     int ret = 0;
     
     // 문자 장치 등록
 
-    major = register_chrdev(0, LCD1602_CHAR_DEV_NAME, &fops);
+    major = register_chrdev(0, LCD1602_CHAR_DEV_NAME, &lcd1602_fops);
     if(major < 0){
         pr_err("register_chrdev() failed: %d\n",major);
 
