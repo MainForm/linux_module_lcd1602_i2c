@@ -22,6 +22,13 @@ static int lcd1602_open(struct inode * inode, struct file * file){
 
     pr_info("opened lcd1602 device\n");
 
+    lcd1602_init_device(lcd_dev);
+
+    pr_info("initialized lcd1602 device\n");
+
+    // 테스트 용으로 "Hello World" 출력
+    lcd1602_send_string(lcd_dev,"Hello World");
+
     return ret;
 }
 
