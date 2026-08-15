@@ -12,11 +12,17 @@
 #define LCD1602_I2C_NR_DEFAULT          1
 #define LCD1602_I2C_ADDRESS_DEFAULT     0x27
 
-struct lcd1602_device lcd_device;
+static struct lcd1602_device lcd_device;
+
+struct lcd1602_device *lcd1602_get_device(void){
+    return &lcd_device;
+}
 
 static int __init init_device(void){
     int ret = 0;
     
+    atomic_set(&lcd_device.opened, 0);
+
     // 문자 장치 등록
     lcd_device.major = register_chrdev(0, LCD1602_CHAR_DEV_NAME, &lcd1602_fops);
     if(lcd_device.major < 0){
