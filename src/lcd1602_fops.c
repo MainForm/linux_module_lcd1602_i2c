@@ -26,9 +26,6 @@ static int lcd1602_open(struct inode * inode, struct file * file){
 
     pr_info("initialized lcd1602 device\n");
 
-    // 테스트 용으로 "Hello World" 출력
-    lcd1602_send_string(lcd_dev,"Hello World");
-
     return ret;
 }
 
@@ -43,8 +40,49 @@ static int lcd1602_release(struct inode * inode, struct file * file){
     return 0;
 }
 
+static ssize_t lcd1602_write(struct file * file, const char __user * buffer, size_t count, loff_t * offset){
+    struct lcd1602_device *lcd = file->private_data;
+
+    size_t cur_x_pos = *offset % LCD1602_WIDTH_SIZE;
+    size_t cur_y_pos = *offset / LCD1602_WIDTH_SIZE;
+
+    char lcd_buffer[LCD1602_CHAR_MAX] = {0, };
+
+    if (*offset < 0)
+        return -EINVAL;
+
+    if (*offset >= LCD1602_CHAR_MAX)
+        return -ENOSPC;
+
+    count = min(LCD1602_CHAR_MAX - (size_t)*offset, count);
+
+    pr_info("writing data to lcd\n");
+
+
+    if(copy_from_user(lcd_buffer,buffer,count)){
+        pr_err("copy_from_user() failed\n");
+        return -EFAULT;
+    }
+
+    for(size_t i = 0;i < count;i++){
+        lcd1602_send_char(lcd, lcd_buffer[i]);
+
+        ++cur_x_pos;
+        if(cur_x_pos > 15){
+            ++cur_y_pos;
+            lcd1602_set_cursor(lcd,0, cur_y_pos);
+            cur_x_pos = 0;
+        }
+    }
+
+    *offset += count;
+
+    return count;
+}
+
 const struct file_operations lcd1602_fops = {
     .owner = THIS_MODULE,
     .open = lcd1602_open,
     .release = lcd1602_release,
+    .write = lcd1602_write,
 };

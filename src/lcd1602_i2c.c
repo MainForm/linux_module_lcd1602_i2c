@@ -6,10 +6,10 @@
 
 #define I2C_DEV_TYPE       	"lcd1602_i2c"
 
-#define LCD1602_MODE_RS		(0x01 << 0)
-#define LCD1602_MODE_RW		(0x01 << 1)
-#define LCD1602_MODE_EN		(0x01 << 2)
-#define LCD1602_MODE_BL		(0x01 << 3)		// back lgith
+static const u8 LCD1602_ROW_OFFSET[2] = {
+    0x00,
+    0x40
+};
 
 int lcd1602_i2c_init(struct lcd1602_device *lcd, int i2c_nr, int i2c_address){
     int ret = 0;
@@ -143,4 +143,14 @@ void lcd1602_init_device(struct lcd1602_device *lcd){
 
     /* Display on, cursor off, blink off */
     lcd1602_send_command(lcd, 0x0c);
+}
+
+int lcd1602_set_cursor(struct lcd1602_device *lcd, const size_t col, const size_t row){
+    if(col > 15 || row > 1){
+        return -EFAULT;
+    }
+
+    lcd1602_send_command(lcd,LCD1602_CMD_SET_DDRAM_ADDR | (LCD1602_ROW_OFFSET[row] + col));
+
+    return 0;
 }
