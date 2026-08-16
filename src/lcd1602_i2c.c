@@ -69,7 +69,7 @@ void lcd1602_i2c_exit(struct lcd1602_device *lcd){
     }
 }
 
-void lcd1602_send_data(struct lcd1602_device *lcd, const u8 data, const u8 mode){
+int lcd1602_send_data(struct lcd1602_device *lcd, const u8 data, const u8 mode){
 	u8 value = ((data & 0x0f) << 4) | mode;
 
 	u8 buffers[2] = {
@@ -77,37 +77,65 @@ void lcd1602_send_data(struct lcd1602_device *lcd, const u8 data, const u8 mode)
 		value & ~LCD1602_MODE_EN,
 	};
 
-	i2c_master_send(lcd->client, buffers, sizeof(buffers) / sizeof(u8));
+	return i2c_master_send(lcd->client, buffers, sizeof(buffers) / sizeof(u8));
 }
 
-void lcd1602_send_command(struct lcd1602_device *lcd, const u8 command){
+int lcd1602_send_command(struct lcd1602_device *lcd, const u8 command){
+    int ret = 0;
     u8 mode = LCD1602_MODE_BL;
 
-    lcd1602_send_data(lcd, command >> 4, mode);
-    lcd1602_send_data(lcd, command & 0x0f, mode);
+    ret = lcd1602_send_data(lcd, command >> 4, mode);
+    if(ret < 0){
+        return ret;
+    }
 
+    ret = lcd1602_send_data(lcd, command & 0x0f, mode);
+    if(ret < 0){
+        return ret;
+    }
 
     if (command == 0x01 || command == 0x02 || command == 0x03)
         fsleep(2000);
     else
         fsleep(50);
+
+    return 0;
 }
 
-void lcd1602_send_char(struct lcd1602_device *lcd, const char character)
+int lcd1602_send_char(struct lcd1602_device *lcd, const char character)
 {
+    int ret = 0;
     u8 mode = LCD1602_MODE_BL | LCD1602_MODE_RS;
 
-    lcd1602_send_data(lcd, character >> 4, mode);
-    lcd1602_send_data(lcd, character & 0x0f, mode);
+    ret = lcd1602_send_data(lcd, character >> 4, mode);
+    if(ret < 0){
+        return ret;
+    }
+
+    ret = lcd1602_send_data(lcd, character & 0x0f, mode);
+    if(ret < 0){
+        return ret;
+    }
 
 	fsleep(50);
+
+    return 0;
 }
 
-void lcd1602_send_string(struct lcd1602_device *lcd, const char* str){
+int lcd1602_send_string(struct lcd1602_device *lcd, const char* str){
+    int ret = 0;
+    int char_count = 0;
+
     while(*str){
-        lcd1602_send_char(lcd,*str);
+        ret = lcd1602_send_char(lcd,*str);
+        if(ret < 0){
+            return ret;
+        }
+        char_count++;
         str++;
     }
+
+    return char_count;
 }
 
 void lcd1602_init_device(struct lcd1602_device *lcd){
@@ -130,19 +158,19 @@ void lcd1602_init_device(struct lcd1602_device *lcd){
     fsleep(200);
 
     /* 4비트, 2줄, 5x8 폰트 */
-    lcd1602_send_command(lcd, 0x28);
+    lcd1602_send_command(lcd, LCD1602_CMD_FUNCTION_SET | 0x08);
 
     /* Display off */
-    lcd1602_send_command(lcd, 0x08);
+    lcd1602_send_command(lcd, LCD1602_CMD_DISPLAY_CONTROL);
 
     /* Clear display */
-    lcd1602_send_command(lcd, 0x01);
+    lcd1602_send_command(lcd, LCD1602_CMD_CLEAR_DISPLAY);
 
     /* Entry mode: 커서 오른쪽 이동 */
-    lcd1602_send_command(lcd, 0x06);
+    lcd1602_send_command(lcd, LCD1602_CMD_ENTRY_MODE_SET | 0x02);
 
     /* Display on, cursor off, blink off */
-    lcd1602_send_command(lcd, 0x0c);
+    lcd1602_send_command(lcd, LCD1602_CMD_DISPLAY_CONTROL | 0x04);
 }
 
 int lcd1602_set_cursor(struct lcd1602_device *lcd, const size_t col, const size_t row){
@@ -150,7 +178,5 @@ int lcd1602_set_cursor(struct lcd1602_device *lcd, const size_t col, const size_
         return -EFAULT;
     }
 
-    lcd1602_send_command(lcd,LCD1602_CMD_SET_DDRAM_ADDR | (LCD1602_ROW_OFFSET[row] + col));
-
-    return 0;
+    return lcd1602_send_command(lcd,LCD1602_CMD_SET_DDRAM_ADDR | (LCD1602_ROW_OFFSET[row] + col));
 }

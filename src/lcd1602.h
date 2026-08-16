@@ -46,10 +46,10 @@ struct lcd1602_device *lcd1602_get_device(void);
 int lcd1602_i2c_init(struct lcd1602_device *lcd, int i2c_nr, int i2c_address);
 void lcd1602_i2c_exit(struct lcd1602_device *lcd);
 
-void lcd1602_send_data(struct lcd1602_device *lcd, const u8 data, const u8 mode);
-void lcd1602_send_command(struct lcd1602_device *lcd, const u8 command);
-void lcd1602_send_char(struct lcd1602_device *lcd, const char character);
-void lcd1602_send_string(struct lcd1602_device *lcd, const char* str);
+int lcd1602_send_data(struct lcd1602_device *lcd, const u8 data, const u8 mode);
+int lcd1602_send_command(struct lcd1602_device *lcd, const u8 command);
+int lcd1602_send_char(struct lcd1602_device *lcd, const char character);
+int lcd1602_send_string(struct lcd1602_device *lcd, const char* str);
 
 void lcd1602_init_device(struct lcd1602_device *lcd);
 
