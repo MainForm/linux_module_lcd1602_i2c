@@ -6,6 +6,7 @@
 #include <linux/i2c.h>
 
 #include "lcd1602.h"
+#include "lcd1602_ioctl.h"
 
 static int lcd1602_open(struct inode * inode, struct file * file){
     int ret = 0;
@@ -80,9 +81,43 @@ static ssize_t lcd1602_write(struct file * file, const char __user * buffer, siz
     return count;
 }
 
+static long lcd1602_ioctl(struct file * file, unsigned int command, unsigned long arguments){
+    int ret = 0;
+    struct lcd1602_device *lcd = file->private_data;
+    struct lcd1602_cursor target_cursor;
+
+    switch(command){
+        case LCD1602_IOCTL_CLEAR:
+            ret = lcd1602_send_command(lcd, LCD1602_CMD_CLEAR_DISPLAY);
+
+            if(ret < 0){
+                return ret;
+            }
+
+            return 0;
+        case LCD1602_IOCTL_SET_CUR:
+            if(copy_from_user(&target_cursor,(void *)arguments,sizeof(struct lcd1602_cursor))){
+                pr_err("copy_from_user() failed\n");
+                return -EFAULT;
+            }
+
+            ret = lcd1602_set_cursor(lcd,target_cursor.column,target_cursor.row);
+            if(ret < 0){
+                return ret;
+            }
+
+            return 0;
+        default:
+            return -EINVAL;
+    }
+
+    return -EINVAL;
+}
+
 const struct file_operations lcd1602_fops = {
     .owner = THIS_MODULE,
     .open = lcd1602_open,
     .release = lcd1602_release,
     .write = lcd1602_write,
+    .unlocked_ioctl = lcd1602_ioctl,
 };
